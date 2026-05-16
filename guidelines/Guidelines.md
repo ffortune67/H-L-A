@@ -3,8 +3,8 @@ Frontend: React.js components using Functional Hooks (useState, useEffect).
 Styling: Tailwind CSS (Utility-first). No custom CSS files; use Tailwind classes for everything (spacing, colors, responsive).
 Backend Interface: Node.js/Express. Prepare the UI to receive JSON data for the "Services" and "Contributions" sections.
 Clean Code: Components must be modular (e.g., Header.jsx, ServiceCard.jsx, PaymentForm.jsx).
-Component Architecture (Figma to Code)
-Auto-Layout: All Figma frames must use Auto-Layout to ensure a perfect translation to Flexbox/Grid in Tailwind.
+Component Architecture (Design to Code)
+Auto-Layout: All design frames must use Auto-Layout to ensure a perfect translation to Flexbox/Grid in Tailwind.
 Naming Convention: Use PascalCase for components (e.g., HeroSection, ContactForm).
 Responsive: Design for 3 breakpoints: Mobile (375px), Tablet (768px), and Desktop (1440px).
 Design Tokens (Tailwind Config)
