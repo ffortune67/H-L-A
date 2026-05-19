@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { Facebook, Twitter, Instagram, Youtube, MapPin, Phone, Mail } from "lucide-react";
 import { navLinks } from "../config/navigation";
-import image_edd716050066d1607cf7d0a1bc78e0a8890bc95b from "../../assets/edd716050066d1607cf7d0a1bc78e0a8890bc95b.png";
+import image_edd716050066d1607cf7d0a1bc78e0a8890bc95b from "../assets/edd716050066d1607cf7d0a1bc78e0a8890bc95b.png";
 
 export function Footer() {
   return (
