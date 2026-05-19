@@ -1,42 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { usePaymentConfirmation } from '../../../hooks/usePaymentConfirmation';
 import './PaymentConfirmation.css';
 
 const BankTransferConfirmation = () => {
     const { contribution_id } = useParams();
     const navigate = useNavigate();
-    const [payment, setPayment] = useState(null);
-    const [bankAccount, setBankAccount] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const { payment, bankAccount, loading, error } = usePaymentConfirmation(contribution_id);
     const [copied, setCopied] = useState(false);
 
-    useEffect(() => {
-        const fetchPaymentDetails = async () => {
-            try {
-                const response = await axios.get(
-                    `${process.env.REACT_APP_API_URL || 'http://localhost:3000'}/api/payments/confirmation/${contribution_id}`
-                );
-                setPayment(response.data.contribution);
-                setPayment(prev => ({
-                    ...response.data.contribution,
-                    transaction: response.data.transaction
-                }));
-                setBankAccount(response.data.bank_account);
-                setLoading(false);
-            } catch (err) {
-                setError(err.response?.data?.message || 'Erreur lors du chargement');
-                setLoading(false);
-            }
-        };
-
-        if (contribution_id) {
-            fetchPaymentDetails();
-        }
-    }, [contribution_id]);
-
-    const copyToClipboard = (text, field) => {
+    const copyToClipboard = (text: string, field: string) => {
         navigator.clipboard.writeText(text);
         setCopied(field);
         setTimeout(() => setCopied(false), 2000);

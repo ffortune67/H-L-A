@@ -1,71 +1,29 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { useMobileMoneyConfirmation } from '../../../hooks/useMobileMoneyConfirmation';
 import './PaymentConfirmation.css';
 
 const MobileMoneyConfirmation = () => {
     const { contribution_id } = useParams();
     const navigate = useNavigate();
-    const [payment, setPayment] = useState(null);
-    const [mobileAccounts, setMobileAccounts] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [selectedProvider, setSelectedProvider] = useState(null);
-    const [transactionId, setTransactionId] = useState('');
-    const [submitted, setSubmitted] = useState(false);
+    const {
+        payment,
+        mobileAccounts,
+        loading,
+        error,
+        selectedProvider,
+        setSelectedProvider,
+        transactionId,
+        setTransactionId,
+        submitted,
+        handleSubmit,
+    } = useMobileMoneyConfirmation(contribution_id);
 
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const paymentRes = await axios.get(
-                    `${process.env.REACT_APP_API_URL || 'http://localhost:3000'}/api/payments/confirmation/${contribution_id}`
-                );
-                setPayment(paymentRes.data.contribution);
-
-                const accountsRes = await axios.get(
-                    `${process.env.REACT_APP_API_URL || 'http://localhost:3000'}/api/payments/methods/mobile`
-                );
-                setMobileAccounts(accountsRes.data.accounts);
-                
-                if (accountsRes.data.accounts.length > 0) {
-                    setSelectedProvider(accountsRes.data.accounts[0].provider_name);
-                }
-                
-                setLoading(false);
-            } catch (err) {
-                setError(err.response?.data?.message || 'Erreur lors du chargement');
-                setLoading(false);
-            }
-        };
-
-        if (contribution_id) {
-            fetchData();
-        }
-    }, [contribution_id]);
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        
-        if (!transactionId.trim()) {
-            setError('Veuillez entrer l\'ID de votre transaction');
-            return;
-        }
-
-        try {
-            await axios.post(
-                `${process.env.REACT_APP_API_URL || 'http://localhost:3000'}/api/payments/mobile-money`,
-                {
-                    contribution_id,
-                    provider: selectedProvider,
-                    transaction_id: transactionId
-                }
-            );
-            setSubmitted(true);
+        if (submitted) {
             setTimeout(() => navigate('/donations'), 3000);
-        } catch (err) {
-            setError(err.response?.data?.message || 'Erreur lors de la soumission');
         }
-    };
+    }, [submitted, navigate]);
 
     if (loading) return <div className="loading">Chargement...</div>;
     if (error && !submitted) return <div className="error">{error}</div>;

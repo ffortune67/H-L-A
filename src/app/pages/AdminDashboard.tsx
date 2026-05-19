@@ -1,34 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React from 'react';
+import { useAdminDashboard } from '../../hooks/useAdminDashboard';
 import './AdminDashboard.css';
 
 const AdminDashboard = () => {
-    const [overview, setOverview] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [activeTab, setActiveTab] = useState('overview');
-
-    useEffect(() => {
-        const fetchOverview = async () => {
-            try {
-                const response = await axios.get(
-                    `${process.env.REACT_APP_API_URL || 'http://localhost:3000'}/api/admin/dashboard`,
-                    {
-                        headers: {
-                            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-                        }
-                    }
-                );
-                setOverview(response.data.overview);
-                setLoading(false);
-            } catch (err) {
-                setError(err.response?.data?.message || 'Erreur lors du chargement');
-                setLoading(false);
-            }
-        };
-
-        fetchOverview();
-    }, []);
+    const { overview, loading, error, activeTab, setActiveTab } = useAdminDashboard();
 
     if (loading) return <div className="admin-loading">Chargement du dashboard...</div>;
     if (error) return <div className="admin-error">{error}</div>;
@@ -58,18 +33,6 @@ const AdminDashboard = () => {
                     onClick={() => setActiveTab('transactions')}
                 >
                     ✓ Vérification
-                </button>
-                <button 
-                    className={`nav-tab ${activeTab === 'blog' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('blog')}
-                >
-                    📝 Blog
-                </button>
-                <button 
-                    className={`nav-tab ${activeTab === 'documents' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('documents')}
-                >
-                    📄 Documents
                 </button>
             </div>
 
@@ -141,17 +104,6 @@ const AdminDashboard = () => {
                     <TransactionVerification />
                 )}
 
-                {activeTab === 'blog' && (
-                    <div className="coming-soon">
-                        <p>📝 Gestion du Blog - Bientôt disponible</p>
-                    </div>
-                )}
-
-                {activeTab === 'documents' && (
-                    <div className="coming-soon">
-                        <p>📄 Gestion des Documents - Bientôt disponible</p>
-                    </div>
-                )}
             </div>
         </div>
     );
@@ -167,7 +119,7 @@ const DonationsList = () => {
         const fetchDonations = async () => {
             try {
                 const response = await axios.get(
-                    `${process.env.REACT_APP_API_URL || 'http://localhost:3000'}/api/admin/donations`,
+                    `${API_URL}/api/admin/donations`,
                     {
                         params: { ...filters, ...pagination },
                         headers: {
@@ -176,7 +128,6 @@ const DonationsList = () => {
                     }
                 );
                 setDonations(response.data.donations);
-                setPagination(response.data.pagination);
                 setLoading(false);
             } catch (err) {
                 console.error('Error fetching donations:', err);
@@ -245,7 +196,7 @@ const TransactionVerification = () => {
         const fetchTransactions = async () => {
             try {
                 const response = await axios.get(
-                    `${process.env.REACT_APP_API_URL || 'http://localhost:3000'}/api/admin/transactions?status=pending`,
+                    `${API_URL}/api/admin/transactions?status=pending`,
                     {
                         headers: {
                             'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
@@ -266,7 +217,7 @@ const TransactionVerification = () => {
     const handleVerify = async (transactionId, status) => {
         try {
             await axios.post(
-                `${process.env.REACT_APP_API_URL || 'http://localhost:3000'}/api/admin/transactions/${transactionId}/verify`,
+                `${API_URL}/api/admin/transactions/${transactionId}/verify`,
                 { verification_status: status },
                 {
                     headers: {
@@ -274,7 +225,6 @@ const TransactionVerification = () => {
                     }
                 }
             );
-            // Refresh list
             setTransactions(transactions.filter(t => t.id !== transactionId));
         } catch (err) {
             console.error('Error verifying transaction:', err);
@@ -325,5 +275,260 @@ const TransactionVerification = () => {
         </div>
     );
 };
+
+const BlogAdmin = () => {
+    const [posts, setPosts] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [saving, setSaving] = useState(false);
+    const [form, setForm] = useState({ title: '', excerpt: '', content: '', category: '', tags: '' });
+
+    const headers = {
+        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+    };
+
+    const fetchPosts = async () => {
+        try {
+            const response = await axios.get(`${API_URL}/api/blog/admin/posts`, { params: { limit: 50 }, headers });
+            setPosts(response.data.posts);
+        } catch (err) {
+            console.error('Error fetching blog posts:', err);
+            setError('Impossible de charger les articles du blog.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchPosts();
+    }, []);
+
+    const handleSave = async (e) => {
+        e.preventDefault();
+        setError(null);
+        setSaving(true);
+
+        try {
+            await axios.post(
+                `${API_URL}/api/blog`,
+                {
+                    title: form.title,
+                    excerpt: form.excerpt,
+                    content: form.content,
+                    category: form.category,
+                    tags: form.tags.split(',').map((tag) => tag.trim()).filter(Boolean)
+                },
+                { headers }
+            );
+            setForm({ title: '', excerpt: '', content: '', category: '', tags: '' });
+            fetchPosts();
+        } catch (err) {
+            console.error('Error creating blog post:', err);
+            setError(err.response?.data?.message || 'Impossible de créer le post.');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleAction = async (id, action) => {
+        try {
+            await axios.post(`${API_URL}/api/blog/${id}/${action}`, {}, { headers });
+            fetchPosts();
+        } catch (err) {
+            console.error(`Error ${action} blog post:`, err);
+            setError(`Impossible de ${action} l'article.`);
+        }
+    };
+
+    const handleDelete = async (id) => {
+        try {
+            await axios.delete(`${API_URL}/api/blog/${id}`, { headers });
+            fetchPosts();
+        } catch (err) {
+            console.error('Error deleting blog post:', err);
+            setError('Impossible de supprimer l article.');
+        }
+    };
+
+    if (loading) return <div className="loading">Chargement...</div>;
+    if (error) return <div className="admin-error">{error}</div>;
+
+    return (
+        <div className="blog-admin-section">
+            <h3>Administration du Blog</h3>
+            <div className="admin-grid">
+                <div className="admin-card">
+                    <h4>Créer un nouvel article</h4>
+                    <form onSubmit={handleSave} className="admin-form">
+                        <input type="text" placeholder="Titre" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
+                        <input type="text" placeholder="Catégorie" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} />
+                        <input type="text" placeholder="Extrait" value={form.excerpt} onChange={(e) => setForm({ ...form, excerpt: e.target.value })} />
+                        <textarea placeholder="Contenu" value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} required rows={6} />
+                        <input type="text" placeholder="Tags (séparés par des virgules)" value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} />
+                        <button type="submit" disabled={saving} className="btn-primary">{saving ? 'Enregistrement...' : 'Créer post'}</button>
+                    </form>
+                </div>
+
+                <div className="admin-card">
+                    <h4>Articles existants</h4>
+                    <div className="admin-table-wrapper">
+                        <table className="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Titre</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {posts.map((post) => (
+                                    <tr key={post.id}>
+                                        <td>{post.title}</td>
+                                        <td>{post.status}</td>
+                                        <td>{new Date(post.created_at).toLocaleDateString('fr-FR')}</td>
+                                        <td className="admin-actions">
+                                            <button type="button" onClick={() => handleAction(post.id, 'publish')} className="btn-small">Publier</button>
+                                            <button type="button" onClick={() => handleAction(post.id, 'archive')} className="btn-small">Archiver</button>
+                                            <button type="button" onClick={() => handleDelete(post.id)} className="btn-small delete">Supprimer</button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const DocumentsAdmin = () => {
+    const [documents, setDocuments] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [uploading, setUploading] = useState(false);
+    const [form, setForm] = useState({ title: '', description: '', category: '', file: null });
+
+    const headers = {
+        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+    };
+
+    const fetchDocuments = async () => {
+        try {
+            const response = await axios.get(`${API_URL}/api/documents/admin/list`, { params: { limit: 50 }, headers });
+            setDocuments(response.data.documents);
+        } catch (err) {
+            console.error('Error fetching documents:', err);
+            setError('Impossible de charger les documents.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchDocuments();
+    }, []);
+
+    const handleUpload = async (e) => {
+        e.preventDefault();
+        setError(null);
+        setUploading(true);
+
+        if (!form.file) {
+            setError('Veuillez sélectionner un fichier.');
+            setUploading(false);
+            return;
+        }
+
+        const data = new FormData();
+        data.append('title', form.title);
+        data.append('description', form.description);
+        data.append('category', form.category);
+        data.append('file', form.file);
+
+        try {
+            await axios.post(`${API_URL}/api/documents`, data, {
+                headers: {
+                    ...headers,
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+            setForm({ title: '', description: '', category: '', file: null });
+            fetchDocuments();
+        } catch (err) {
+            console.error('Error uploading document:', err);
+            setError(err.response?.data?.message || 'Téléversement échoué.');
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const handleDelete = async (id) => {
+        try {
+            await axios.delete(`${API_URL}/api/documents/${id}`, { headers });
+            fetchDocuments();
+        } catch (err) {
+            console.error('Error deleting document:', err);
+            setError('Impossible de supprimer le document.');
+        }
+    };
+
+    if (loading) return <div className="loading">Chargement...</div>;
+    if (error) return <div className="admin-error">{error}</div>;
+
+    return (
+        <div className="documents-admin-section">
+            <h3>Administration des Documents</h3>
+            <div className="admin-grid">
+                <div className="admin-card">
+                    <h4>Uploader un document</h4>
+                    <form onSubmit={handleUpload} className="admin-form" encType="multipart/form-data">
+                        <input type="text" placeholder="Titre" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
+                        <input type="text" placeholder="Catégorie" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} required />
+                        <input type="text" placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+                        <input type="file" onChange={(e) => setForm({ ...form, file: e.target.files?.[0] || null })} required />
+                        <button type="submit" disabled={uploading} className="btn-primary">{uploading ? 'Téléversement...' : 'Uploader'}</button>
+                    </form>
+                </div>
+
+                <div className="admin-card">
+                    <h4>Documents disponibles</h4>
+                    <div className="admin-table-wrapper">
+                        <table className="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Titre</th>
+                                    <th>Catégorie</th>
+                                    <th>Taille</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {documents.map((doc) => (
+                                    <tr key={doc.id}>
+                                        <td>{doc.title}</td>
+                                        <td>{doc.category}</td>
+                                        <td>{(doc.file_size / 1024).toFixed(1)} KB</td>
+                                        <td className="admin-actions">
+                                            <button type="button" onClick={() => handleDelete(doc.id)} className="btn-small delete">Supprimer</button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const ProjectsAdmin = () => (
+    <div className="coming-soon">
+        <p>🚧 Gestion des projets : actuellement, les projets sont rendus via une page statique frontend.</p>
+        <p>Pour la prochaine étape, ajoutez un backend de projets et exposez des routes d'administration.</p>
+    </div>
+);
 
 export default AdminDashboard;

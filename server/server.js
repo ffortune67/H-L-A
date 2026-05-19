@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 require('dotenv').config();
 
 // Import routes
@@ -8,6 +9,8 @@ const donationsRoutes = require('./routes/donationsRoutes');
 const usersRoutes = require('./routes/usersRoutes');
 const paymentsRoutes = require('./routes/paymentsRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const blogRoutes = require('./routes/blogRoutes');
+const documentsRoutes = require('./routes/documentsRoutes');
 
 // Import middleware
 const { corsHeaders, requestLogger, errorHandler } = require('./middleware/authMiddleware');
@@ -52,7 +55,12 @@ app.use('/api/auth', authRoutes);
 app.use('/api/donations', donationsRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/payments', paymentsRoutes);
+app.use('/api/blog', blogRoutes);
+app.use('/api/documents', documentsRoutes);
 app.use('/api/admin', adminRoutes);
+
+// Serve uploaded document files
+app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
 
 // Legacy route support (for existing frontend code)
 app.post('/api/payments', (req, res) => {

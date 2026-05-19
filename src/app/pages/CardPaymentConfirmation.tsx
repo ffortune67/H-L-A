@@ -1,70 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { useCardPaymentConfirmation } from '../../../hooks/useCardPaymentConfirmation';
 import './PaymentConfirmation.css';
 
 const CardPaymentConfirmation = () => {
     const { contribution_id } = useParams();
     const navigate = useNavigate();
-    const [payment, setPayment] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [cardData, setCardData] = useState({
-        bank_name: '',
-        card_last4: '',
-        transaction_id: ''
-    });
-    const [submitted, setSubmitted] = useState(false);
+    const {
+        payment,
+        loading,
+        error,
+        cardData,
+        submitted,
+        handleChange,
+        handleSubmit,
+    } = useCardPaymentConfirmation(contribution_id);
 
     useEffect(() => {
-        const fetchPaymentDetails = async () => {
-            try {
-                const response = await axios.get(
-                    `${process.env.REACT_APP_API_URL || 'http://localhost:3000'}/api/payments/confirmation/${contribution_id}`
-                );
-                setPayment(response.data.contribution);
-                setLoading(false);
-            } catch (err) {
-                setError(err.response?.data?.message || 'Erreur lors du chargement');
-                setLoading(false);
-            }
-        };
-
-        if (contribution_id) {
-            fetchPaymentDetails();
-        }
-    }, [contribution_id]);
-
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setCardData(prev => ({
-            ...prev,
-            [name]: value
-        }));
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-
-        if (!cardData.bank_name || !cardData.card_last4) {
-            setError('Veuillez remplir tous les champs');
-            return;
-        }
-
-        try {
-            await axios.post(
-                `${process.env.REACT_APP_API_URL || 'http://localhost:3000'}/api/payments/card`,
-                {
-                    contribution_id,
-                    ...cardData
-                }
-            );
-            setSubmitted(true);
+        if (submitted) {
             setTimeout(() => navigate('/donations'), 3000);
-        } catch (err) {
-            setError(err.response?.data?.message || 'Erreur lors de la soumission');
         }
-    };
+    }, [submitted, navigate]);
 
     if (loading) return <div className="loading">Chargement...</div>;
     if (error && !submitted) return <div className="error">{error}</div>;

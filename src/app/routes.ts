@@ -9,6 +9,10 @@ import { Blog } from "./pages/Blog";
 import { Contact } from "./pages/Contact";
 import { Downloads } from "./pages/Downloads";
 import { Donations } from "./pages/Donations";
+import BankTransferConfirmation from "./pages/BankTransferConfirmation";
+import MobileMoneyConfirmation from "./pages/MobileMoneyConfirmation";
+import CardPaymentConfirmation from "./pages/CardPaymentConfirmation";
+import AdminDashboard from "./pages/AdminDashboard";
 
 export const router = createBrowserRouter([
   {
@@ -24,6 +28,10 @@ export const router = createBrowserRouter([
       { path: "contact", Component: Contact },
       { path: "downloads", Component: Downloads },
       { path: "donations", Component: Donations },
+      { path: "payment/bank-transfer/:contribution_id", Component: BankTransferConfirmation },
+      { path: "payment/mobile-money/:contribution_id", Component: MobileMoneyConfirmation },
+      { path: "payment/card/:contribution_id", Component: CardPaymentConfirmation },
+      { path: "admin/dashboard", Component: AdminDashboard },
     ],
   },
 ]);
